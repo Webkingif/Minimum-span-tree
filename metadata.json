@@ -1,0 +1,6 @@
+{
+  "name": "Minimum Spanning Tree Visualizer",
+  "description": "An interactive, educational visualization tool for Prim and Kruskal minimum spanning tree algorithms using Next.js, Framer Motion, and Cytoscape.js.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
