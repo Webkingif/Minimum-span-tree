@@ -20,6 +20,7 @@ interface CanvasProps {
   onUpdateEdgeWeight: (id: string, weight: number) => void;
   onDeleteEdge: (id: string) => void;
   isAnimationActive: boolean;
+  isMobile?: boolean;
 }
 
 export default function Canvas({
@@ -34,6 +35,7 @@ export default function Canvas({
   onUpdateEdgeWeight,
   onDeleteEdge,
   isAnimationActive,
+  isMobile = false,
 }: CanvasProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const cyRef = useRef<any>(null);
@@ -54,17 +56,33 @@ export default function Canvas({
       initCytoscape();
     }
 
+    // Windows resize listener
+    const handleWindowResize = () => {
+      if (cyRef.current) {
+        cyRef.current.resize();
+      }
+    };
+    window.addEventListener('resize', handleWindowResize);
+
     return () => {
+      window.removeEventListener('resize', handleWindowResize);
       if (cyRef.current) {
         cyRef.current.destroy();
         cyRef.current = null;
       }
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [isMobile]);
 
   function initCytoscape() {
     if (!containerRef.current || !cytoscape) return;
+
+    const nodeWidth = isMobile ? '46px' : '38px';
+    const nodeHeight = isMobile ? '46px' : '38px';
+    const nodeFontSize = isMobile ? '13px' : '11px';
+    const edgeWidth = isMobile ? '3px' : '2px';
+    const edgeFontSize = isMobile ? '12px' : '11px';
+    const edgePadding = isMobile ? '4.5px' : '3px';
 
     cyRef.current = cytoscape({
       container: containerRef.current,
@@ -77,33 +95,33 @@ export default function Canvas({
             'border-width': '2px',
             'border-color': '#94a3b8', // Slate-400
             'color': '#334155', // Slate-700
-            'font-size': '12px',
+            'font-size': nodeFontSize,
             'font-weight': 'bold',
             'text-valign': 'center',
             'text-halign': 'center',
-            'width': '38px',
-            'height': '38px',
+            'width': nodeWidth,
+            'height': nodeHeight,
             'transition-property': 'background-color, border-color, border-width, box-shadow',
-            'transition-duration': '0.2s',
+            'transition-duration': '0.15s',
           },
         },
         {
           selector: 'edge',
           style: {
             'label': 'data(weight)',
-            'width': '2px',
+            'width': edgeWidth,
             'line-color': '#cbd5e1', // Slate-300
-            'font-size': '11px',
+            'font-size': edgeFontSize,
             'font-weight': 'bold',
             'color': '#475569', // Slate-600
             'text-background-opacity': 1,
             'text-background-color': '#ffffff',
-            'text-background-padding': '3px',
+            'text-background-padding': edgePadding,
             'text-background-shape': 'roundrectangle',
             'text-margin-y': -2,
             'curve-style': 'haystack', // High performance straight lines
             'transition-property': 'line-color, width, line-style',
-            'transition-duration': '0.2s',
+            'transition-duration': '0.15s',
           },
         },
         {
@@ -117,7 +135,7 @@ export default function Canvas({
           selector: 'edge:selected',
           style: {
             'line-color': '#6366f1',
-            'width': '3px',
+            'width': isMobile ? '4.5px' : '3px',
           },
         },
       ],
@@ -330,26 +348,26 @@ export default function Canvas({
       .selector('.edge-candidate')
       .style({
         'line-color': '#f59e0b', // Amber-500
-        'width': '4px',
+        'width': isMobile ? '5px' : '4px',
         'line-style': 'dashed',
       })
       .selector('.edge-accepted')
       .style({
         'line-color': '#10b981', // Emerald-500
-        'width': '4px',
+        'width': isMobile ? '5px' : '4px',
         'line-style': 'solid',
       })
       .selector('.edge-rejected')
       .style({
         'line-color': '#ef4444', // Red-500
-        'width': '2.5px',
+        'width': isMobile ? '3.5px' : '2.5px',
         'line-style': 'dotted',
         'color': '#ef4444',
       })
       .selector('.edge-neutral')
       .style({
         'line-color': '#f1f5f9', // Very dimmed neutral slate since it's inactive
-        'width': '1.5px',
+        'width': isMobile ? '2.5px' : '1.5px',
         'opacity': 0.4,
       })
       // Custom edit state helpers
@@ -360,7 +378,7 @@ export default function Canvas({
         'background-color': '#e0e7ff',
       })
       .update();
-  }, [isAnimationActive, currentStep]);
+  }, [isAnimationActive, currentStep, isMobile]);
 
   // Automatically fit nodes to canvas viewport if size changes or standard elements reset
   const handleAutoLayout = () => {
@@ -394,7 +412,10 @@ export default function Canvas({
 
       {/* Mode Selector Panel */}
       {!isAnimationActive && (
-        <div id="workspace-modes-toolbar" className="absolute top-4 left-4 z-10 flex gap-1 bg-white p-1 rounded-xl shadow-sm border border-slate-100">
+        <div
+          id="workspace-modes-toolbar"
+          className="absolute top-4 left-4 z-20 flex gap-1.5 bg-white p-1.5 sm:p-1 rounded-2xl sm:rounded-xl shadow-md sm:shadow-sm border border-slate-150 sm:border-slate-100"
+        >
           <button
             id="mode-select-btn"
             title="Drag / Edit Mode"
@@ -403,13 +424,13 @@ export default function Canvas({
               setSelectedSourceId(null);
             }}
             className={cn(
-              'p-2 rounded-lg transition-all',
+              'p-3.5 sm:p-2 rounded-xl sm:rounded-lg transition-all cursor-pointer',
               mode === 'select'
                 ? 'bg-indigo-50 text-indigo-600'
                 : 'text-slate-500 hover:bg-slate-50'
             )}
           >
-            <Move className="w-4 h-4" />
+            <Move className="w-5 h-5 sm:w-4 sm:h-4" />
           </button>
           
           <button
@@ -420,13 +441,13 @@ export default function Canvas({
               setSelectedSourceId(null);
             }}
             className={cn(
-              'p-2 rounded-lg transition-all',
+              'p-3.5 sm:p-2 rounded-xl sm:rounded-lg transition-all cursor-pointer',
               mode === 'addNode'
                 ? 'bg-indigo-50 text-indigo-600'
                 : 'text-slate-500 hover:bg-slate-50'
             )}
           >
-            <PlusCircle className="w-4 h-4" />
+            <PlusCircle className="w-5 h-5 sm:w-4 sm:h-4" />
           </button>
 
           <button
@@ -434,13 +455,13 @@ export default function Canvas({
             title="Connect Nodes"
             onClick={() => onChangeMode('addEdge')}
             className={cn(
-              'p-2 rounded-lg transition-all',
+              'p-3.5 sm:p-2 rounded-xl sm:rounded-lg transition-all cursor-pointer',
               mode === 'addEdge'
                 ? 'bg-indigo-50 text-indigo-600'
                 : 'text-slate-500 hover:bg-slate-50'
             )}
           >
-            <ArrowUpRight className="w-4 h-4" />
+            <ArrowUpRight className="w-5 h-5 sm:w-4 sm:h-4" />
           </button>
 
           <button
@@ -451,19 +472,19 @@ export default function Canvas({
               setSelectedSourceId(null);
             }}
             className={cn(
-              'p-2 rounded-lg transition-all',
+              'p-3.5 sm:p-2 rounded-xl sm:rounded-lg transition-all cursor-pointer',
               mode === 'delete'
                 ? 'bg-indigo-50 text-indigo-600'
                 : 'text-slate-500 hover:bg-slate-50'
             )}
           >
-            <Trash2 className="w-4 h-4" />
+            <Trash2 className="w-5 h-5 sm:w-4 sm:h-4" />
           </button>
         </div>
       )}
 
       {/* Instructions label depending on mode */}
-      <div className="absolute top-4 right-4 z-10 pointer-events-none bg-white/95 backdrop-blur-sm px-3 py-1.5 rounded-lg border border-slate-100 shadow-sm text-[11px] font-semibold text-slate-500 uppercase tracking-wider">
+      <div className="absolute top-20 left-4 sm:top-4 sm:left-auto sm:right-4 z-10 pointer-events-none bg-white/95 backdrop-blur-sm px-2.5 py-1.5 sm:px-3 sm:py-1.5 rounded-xl sm:rounded-lg border border-slate-150 sm:border-slate-100 shadow-sm text-[10px] sm:text-[11px] font-semibold text-slate-500 uppercase tracking-wider">
         {isAnimationActive ? (
           <span className="text-indigo-600 flex items-center gap-1.5 font-bold">
             <span className="w-1.5 h-1.5 rounded-full bg-indigo-500 animate-ping" />
@@ -489,47 +510,115 @@ export default function Canvas({
 
       {/* Floating Weight Editor Modal */}
       {editingEdge && (
-        <div
-          style={{
-            position: 'absolute',
-            left: `${editingEdge.x - 55}px`,
-            top: `${editingEdge.y - 45}px`,
-          }}
-          className="z-20 bg-white p-2.5 rounded-xl shadow-xl border border-slate-200 w-28 absolute transition-all duration-300 animate-in fade-in zoom-in-90"
-        >
-          <form onSubmit={saveEdgeWeight} className="space-y-1.5">
-            <label className="text-[9px] font-bold text-slate-400 uppercase tracking-wider block">Set Weight</label>
-            <div className="flex gap-1.5 items-center">
-              <input
-                id="edge-weight-input-box"
-                type="number"
-                min="1"
-                max="99"
-                value={editingEdge.weight}
-                onChange={(e) =>
-                  setEditingEdge((prev) =>
-                    prev ? { ...prev, weight: parseInt(e.target.value) || 1 } : null
-                  )
-                }
-                className="w-full bg-slate-50 border border-slate-200 px-1.5 py-1 text-xs font-mono font-bold text-slate-700 rounded-md focus:outline-none focus:border-indigo-400 focus:bg-white"
-                autoFocus
-              />
-              <button
-                type="submit"
-                className="h-7 w-7 bg-indigo-600 text-white rounded-md flex items-center justify-center hover:bg-indigo-700 focus:outline-none shrink-0"
-              >
-                <Edit3 className="w-3.5 h-3.5" />
-              </button>
+        isMobile ? (
+          // Swipe-friendly backdrop modal overlay for Mobile devices
+          <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-xs z-50 flex items-end sm:items-center justify-center p-4">
+            <div className="bg-white rounded-3xl shadow-2xl border border-slate-200 w-full max-w-sm p-6 animate-in slide-in-from-bottom duration-300 pb-8 text-left select-none">
+              <form onSubmit={saveEdgeWeight} className="space-y-4">
+                <div className="flex justify-between items-center pb-2 border-b border-slate-100">
+                  <h3 className="text-xs font-bold uppercase tracking-wider text-slate-400">Connection Cost</h3>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setEditingEdge(null);
+                      if (cyRef.current) cyRef.current.$(':selected').unselect();
+                    }}
+                    className="text-xs text-red-500 hover:text-red-700 font-bold uppercase tracking-wider px-3 py-1.5 rounded-xl hover:bg-slate-50 cursor-pointer"
+                  >
+                    Cancel
+                  </button>
+                </div>
+                
+                <div className="space-y-3 pt-1">
+                  <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Edge Weight (1 - 99)</label>
+                  <div className="flex gap-3">
+                    <input
+                      id="edge-weight-input-box-mobile"
+                      type="number"
+                      min="1"
+                      max="99"
+                      value={editingEdge.weight}
+                      onChange={(e) =>
+                        setEditingEdge((prev) =>
+                          prev ? { ...prev, weight: parseInt(e.target.value, 10) || 1 } : null
+                        )
+                      }
+                      className="flex-1 bg-slate-50 border border-slate-200 px-4 py-3.5 text-xl font-mono font-bold text-slate-800 rounded-2xl focus:outline-none focus:border-indigo-400 focus:bg-white text-center"
+                      autoFocus
+                    />
+                    <button
+                      type="submit"
+                      className="px-6 bg-indigo-600 text-white rounded-2xl flex items-center justify-center hover:bg-indigo-750 font-bold text-sm shadow-lg shadow-indigo-100 cursor-pointer hover:scale-[1.02] active:scale-95 transition-all"
+                    >
+                      <Edit3 className="w-4 h-4 mr-1.5" /> Save
+                    </button>
+                  </div>
+                </div>
+
+                {/* Instant select helper increments for mobile thumbs */}
+                <div className="grid grid-cols-4 gap-2 pt-2">
+                  {[1, 5, 10, 25].map((val) => (
+                    <button
+                      key={val}
+                      type="button"
+                      onClick={() => {
+                        setEditingEdge((prev) =>
+                          prev ? { ...prev, weight: prev.weight + val <= 99 ? prev.weight + val : 99 } : null
+                        );
+                      }}
+                      className="py-3 bg-slate-50 border border-slate-150 rounded-xl text-xs font-mono font-bold text-slate-600 hover:bg-indigo-50 hover:text-indigo-600 hover:border-indigo-200 active:scale-95 transition-all"
+                    >
+                      +{val}
+                    </button>
+                  ))}
+                </div>
+              </form>
             </div>
-          </form>
-        </div>
+          </div>
+        ) : (
+          // Classic absolute-positioned desktop tooltip
+          <div
+            style={{
+              position: 'absolute',
+              left: `${editingEdge.x - 55}px`,
+              top: `${editingEdge.y - 45}px`,
+            }}
+            className="z-20 bg-white p-2.5 rounded-xl shadow-xl border border-slate-250 w-28 absolute transition-all duration-300 animate-in fade-in zoom-in-90"
+          >
+            <form onSubmit={saveEdgeWeight} className="space-y-1.5">
+              <label className="text-[9px] font-bold text-slate-400 uppercase tracking-wider block">Set Weight</label>
+              <div className="flex gap-1.5 items-center">
+                <input
+                  id="edge-weight-input-box"
+                  type="number"
+                  min="1"
+                  max="99"
+                  value={editingEdge.weight}
+                  onChange={(e) =>
+                    setEditingEdge((prev) =>
+                      prev ? { ...prev, weight: parseInt(e.target.value) || 1 } : null
+                    )
+                  }
+                  className="w-full bg-slate-50 border border-slate-200 px-1.5 py-1 text-xs font-mono font-bold text-slate-700 rounded-md focus:outline-none focus:border-indigo-400 focus:bg-white"
+                  autoFocus
+                />
+                <button
+                  type="submit"
+                  className="h-7 w-7 bg-indigo-600 text-white rounded-md flex items-center justify-center hover:bg-indigo-700 focus:outline-none shrink-0"
+                >
+                  <Edit3 className="w-3.5 h-3.5" />
+                </button>
+              </div>
+            </form>
+          </div>
+        )
       )}
 
       {/* Toolbar Options on Bottom Right */}
-      <div className="absolute bottom-4 right-4 z-10 flex gap-2">
+      <div className="absolute bottom-4 right-4 z-15 flex gap-2">
         <button
           onClick={handleAutoLayout}
-          className="h-9 px-3.5 bg-white border border-slate-200 rounded-full flex items-center justify-center gap-1.5 text-xs font-semibold text-slate-600 shadow-sm hover:border-indigo-300 transition-colors bg-white/95"
+          className="h-12 px-5 sm:h-9 sm:px-3.5 bg-white border border-slate-250 sm:border-slate-200 rounded-2xl sm:rounded-full flex items-center justify-center gap-1.5 text-xs font-bold sm:font-semibold text-slate-700 sm:text-slate-600 shadow-md sm:shadow-sm hover:border-indigo-300 transition-all cursor-pointer bg-white/95"
           title="Zoom to Fit Nodes"
         >
           Fit Viewport
