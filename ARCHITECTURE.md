@@ -88,11 +88,15 @@ Our design models representations through robust static types to guarantee compi
 1. **`GraphNode` & `GraphEdge`**: Define absolute coordinates and topology.
 2. **`VisualizerStep`**:
    - `edgeStates` specifies which edges are selected for highlighting:
-     - `'candidate'`: current line being processed (dashed border, warning orange tint, representing step evaluation).
-     - `'accepted'`: edge belongs to MST (solid bold green glowing wire, representing success state).
-     - `'rejected'`: edge rejected to prevent cycles (dim red dotted line).
-     - `'neutral'`: untouched network cabling (clean Slate-200 border, as requested in Clean Minimalism rules).
+     - `'candidate'`: current line being processed (3.5px dashed border, warning amber `#f59e0b` tint, representing step evaluation).
+     - `'accepted'`: edge belongs to MST (solid bold 5px green `#10b981` connection with high-contrast `#047857` weight label and `#ecfdf5` background padding, representing success state).
+     - `'rejected'`: edge rejected to prevent cycles (thin 2.5px dotted red `#ef4444` line).
+     - `'neutral'`: untouched network cabling (clean Slate-200 border, as requested in Clean Minimalism rules, styled with `#cbd5e1` 1.5px and 0.4 opacity).
    - `nodeStates` maps active node colors (`active` is gold, `visited` is emerald, `neutral` is white).
+
+3. **Double-Tap Quick Interactions**:
+   - **Canvas Double-Tap**: Instantly spawns a new node at the coordinates clicked, bypassing the active mode selection.
+   - **Node Double-Tap**: Turns the active node vibrant yellow (`#fef08a`, border `#eab308`) to show select focus, and opens an elegant pop-up modal allowing the user to select a connection partner from a dynamic dropdown list, enter its weight, and insert the edge with one click.
 
 ---
 

@@ -77,7 +77,12 @@ export class PrimAlgorithm implements AlgorithmGenerator {
   generateSteps(graph: GraphData, startNodeId?: string): VisualizerStep[] {
     const steps: VisualizerStep[] = [];
     const nodes = graph.nodes;
-    const edges = graph.edges;
+    
+    // Defensive filter to omit any orphaned edges referencing non-existent nodes
+    const nodeIds = new Set(nodes.map((n) => n.id));
+    const edges = graph.edges.filter(
+      (edge) => nodeIds.has(edge.source) && nodeIds.has(edge.target)
+    );
 
     // Prevent rendering of empty workspace networks
     if (nodes.length === 0) return [];

@@ -169,8 +169,8 @@ For each sorted edge, we generate **two separate snapshots**:
    const root2 = ufu.find(edge.target);
    const isCycleFree = root1 !== root2;
    ```
-   * If `isCycleFree` is true: we execute the union, add the cost, change the edge style permanently to a solid green `accepted` look, and mark nodes as `visited`. We save this stable visual progress in `currentEdgeStates`.
-   * If false: we change the style of the edge temporarily to red dotted `rejected` and write a description: *"This would introduce a cyclic loop."* On the subsequent step, we clear (decay) this specific rejected highlight back to a subtle grey `neutral` so the screen stays clean.
+   * If `isCycleFree` is true: we execute the union, add the cost, change the edge style permanently to a solid bold emerald green (`#10b981`, 5px width, and a high-contrast deep green `#047857` weight label inside a padded `#ecfdf5` background badge) `accepted` look, and mark nodes as `visited`. We save this stable visual progress in `currentEdgeStates`.
+   * If false: we change the style of the edge temporarily to red dotted `#ef4444` `rejected` and write a description: *"This would introduce a cyclic loop."* On the subsequent step, we clear (decay) this specific rejected highlight back to a highly desaturated, thin, and partially translucent (`#cbd5e1`, 1.5px, opacity: 0.4) `neutral` fallback so the screen stays clean.
 
 ---
 

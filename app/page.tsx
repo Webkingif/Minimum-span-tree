@@ -1,10 +1,22 @@
 'use client';
 
 import React, { useState, useMemo, useEffect } from 'react';
+import dynamic from 'next/dynamic';
 import Header from '@/components/layout/header';
 import Sidebar from '@/components/layout/sidebar';
 import Footer from '@/components/layout/footer';
-import Canvas from '@/components/visualizer/canvas';
+
+const Canvas = dynamic(() => import('@/components/visualizer/canvas'), {
+  ssr: false,
+  loading: () => (
+    <div className="w-full h-full min-h-[500px] flex items-center justify-center bg-slate-50 rounded-3xl border border-slate-100">
+      <div className="flex flex-col items-center gap-3">
+        <div className="w-6 h-6 border-2 border-indigo-500 border-t-transparent rounded-full animate-spin" />
+        <span className="text-xs font-semibold text-slate-400">Loading Canvas...</span>
+      </div>
+    </div>
+  ),
+});
 import Pseudocode from '@/components/visualizer/pseudocode';
 import ReusableStatsPanel from '@/components/visualizer/stats-panel';
 import CompletionModal from '@/components/visualizer/completion-modal';

@@ -42,7 +42,7 @@ export type StepType = 'CHECK_EDGE' | 'ACCEPT_EDGE' | 'REJECT_EDGE' | 'COMPLETE'
 ```
 These types are critical for styling:
 * **`PlaybackStatus`**: Drives the play/pause state machine.
-* **`EdgeHighlightType`** & **`NodeHighlightType`**: Direct Cytoscape to apply specific CSS classes (such as `node-visited` or `edge-rejected`) corresponding to the current step of the animation.
+* **`EdgeHighlightType`** & **`NodeHighlightType`**: Direct Cytoscape to apply specific CSS classes (such as `node-visited`, `node-doubletapped`, `edge-accepted`, `edge-candidate`, or `edge-rejected`) corresponding to the current step of the animation.
 
 ---
 

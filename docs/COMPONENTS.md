@@ -96,14 +96,18 @@ If an animation step is active (`isAnimationActive` is true and `currentStep` is
 We map the stylesheet using distinct cytoscape style selectors:
 * **`.node-active`**: Yellow background with orange borders to represent the node currently being evaluated.
 * **`.node-visited`**: Green border and soft green background representing spanned network vertices.
-* **`.edge-candidate`**: Orange dashed lines indicating the edge being checked for cycles or heap extractions.
-* **`.edge-accepted`**: Solid green edge representing a successful Minimum Spanning Tree path.
-* **`.edge-rejected`**: Dotted red line representing a skipped cyclic edge.
-* **`.edge-neutral`**: Grey, low-opacity lines represent edges that aren't part of the active MST, keeping the visualization clean and easy to follow.
+* **`.node-doubletapped`**: Yellow background (`#fef08a`), border color `#eab308` (4px border width), text `#854d0e` representing the node selected for double-tap connection.
+* **`.edge-candidate`**: Golden/amber (`#f59e0b`, 3.5px width) dashed lines indicating the edge being checked for cycles or heap extractions, with amber text background padding (`#fef3c7`).
+* **`.edge-accepted`**: Solid vibrant emerald green (`#10b981`, 5px width) edge representing a successful Minimum Spanning Tree path, styled with high-contrast deep green `#047857` labels and an isolating soft light green `#ecfdf5` background badge.
+* **`.edge-rejected`**: Dotted red (`#ef4444`, 2px width) lines representing a skipped cyclic edge, styled with red-700 label color (`#b91c1c`) and a soft pink/red background badge.
+* **`.edge-neutral`**: Highly desaturated neutral slate (`#cbd5e1`, 1.5px width, 0.4 opacity) lines represent edges that aren't part of the active MST, keeping the visualization clean and easy to follow.
 
 #### Deletion, Positioning, and Weight Editors
 * **Mode Switch**: Users can toggle between `select` (to move nodes), `addNode` (to click and drop new vertices), `addEdge` (to click a source node, then a target node to create a weighted edge), and `delete` (to click and delete components).
 * **Floating Form Editor**: When users click a neutral edge, we find its precise canvas midpoint (`target.midpoint()`) and render a floating React HTML Form wrapper directly above it. This allows the user to input custom weights (1 to 99) in real time.
+* **Double-Tap Quick Gestures**:
+  - **Canvas Double-Tap**: Instantly spawns a new node at the coordinates clicked, bypassing the active mode selection.
+  - **Node Double-Tap**: Turns the active node vibrant yellow to show focus, and opens an elegant pop-up modal asking the user to select which node they want to connect the double-tapped node with. The user selects from a dynamic dropdown list, sets a custom weight, and adds the edge.
 
 ---
 

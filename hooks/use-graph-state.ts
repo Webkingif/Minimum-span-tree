@@ -1,15 +1,7 @@
 import { useState, useCallback } from 'react';
-import { GraphData, GraphNode, GraphEdge } from '@/types/graph';
-
-const ALPHABET = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
-
-function getNextLabel(existingNodes: GraphNode[]): string {
-  const count = existingNodes.length;
-  if (count < 26) {
-    return ALPHABET[count];
-  }
-  return `${ALPHABET[count % 26]}${Math.floor(count / 26)}`;
-}
+import { GraphData } from '@/types/graph';
+import { useNodeOperations } from './use-node-operations';
+import { useEdgeOperations } from './use-edge-operations';
 
 // Beautiful standard presets for CS visualizers
 export const GRAPH_PRESETS: Record<string, GraphData> = {
@@ -80,91 +72,13 @@ export function useGraphState(initialPresetKey = 'default') {
     }
   }, []);
 
-  const addNode = useCallback((x: number, y: number) => {
-    setGraph((prev) => {
-      const nextId = `node-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`;
-      const newLabel = getNextLabel(prev.nodes);
-      const newNode: GraphNode = {
-        id: nextId,
-        label: newLabel,
-        x,
-        y,
-      };
-      return {
-        ...prev,
-        nodes: [...prev.nodes, newNode],
-      };
-    });
-  }, []);
-
-  const updateNodePosition = useCallback((id: string, x: number, y: number) => {
-    setGraph((prev) => ({
-      ...prev,
-      nodes: prev.nodes.map((node) =>
-        node.id === id ? { ...node, x: Math.round(x), y: Math.round(y) } : node
-      ),
-    }));
-  }, []);
-
-  const deleteNode = useCallback((nodeId: string) => {
-    setGraph((prev) => {
-      // 1. Remove node
-      const nodes = prev.nodes.filter((node) => node.id !== nodeId);
-      // 2. Cascade remove all connected edges
-      const edges = prev.edges.filter(
-        (edge) => edge.source !== nodeId && edge.target !== nodeId
-      );
-      return { nodes, edges };
-    });
-  }, []);
-
-  const addEdge = useCallback((source: string, target: string, weight = 1) => {
-    if (source === target) return;
-
-    setGraph((prev) => {
-      // Avoid duplicate edges in undirected graph visualization
-      const edgeExists = prev.edges.some(
-        (edge) =>
-          (edge.source === source && edge.target === target) ||
-          (edge.source === target && edge.target === source)
-      );
-
-      if (edgeExists) return prev;
-
-      const nextId = `edge-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`;
-      const newEdge: GraphEdge = {
-        id: nextId,
-        source,
-        target,
-        weight: Math.max(1, Math.round(weight)),
-      };
-
-      return {
-        ...prev,
-        edges: [...prev.edges, newEdge],
-      };
-    });
-  }, []);
-
-  const updateEdgeWeight = useCallback((edgeId: string, weight: number) => {
-    setGraph((prev) => ({
-      ...prev,
-      edges: prev.edges.map((edge) =>
-        edge.id === edgeId ? { ...edge, weight: Math.max(1, Math.round(weight)) } : edge
-      ),
-    }));
-  }, []);
-
-  const deleteEdge = useCallback((edgeId: string) => {
-    setGraph((prev) => ({
-      ...prev,
-      edges: prev.edges.filter((edge) => edge.id !== edgeId),
-    }));
-  }, []);
-
   const clearGraph = useCallback(() => {
     setGraph({ nodes: [], edges: [] });
   }, []);
+
+  // Connect sub-module hooks for Node & Edge operations
+  const { addNode, updateNodePosition, deleteNode } = useNodeOperations(setGraph);
+  const { addEdge, updateEdgeWeight, deleteEdge } = useEdgeOperations(setGraph);
 
   return {
     graph,

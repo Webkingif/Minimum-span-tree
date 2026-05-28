@@ -12,6 +12,8 @@ The system represents a **Deterministic Snapshot-Driven Playback Architecture**.
 ┌────────────────────────────────────────────────────────────────────────┐
 │                        USER ACTIONS (VIEWPORTS)                        │
 │  - Click Canvas: Create Node/Edge (addNode, addEdge)                  │
+│  - Double-tap Canvas: Instant Node Creation at coordinates            │
+│  - Double-tap Node: Highlights vibrant yellow and pops select modal   │
 │  - Drag Node: Reposition (updateNodePosition)                          │
 │  - Enter Input: Change Edge Weight (updateEdgeWeight)                  │
 │  - Dropdown/Tab: Switch Algorithms (setAlgorithm)                       │
@@ -94,9 +96,10 @@ Follow this highly specific guide to rebuild the entire application from scratch
 ### Day 2: Interactive Sandbox Canvas UI
 * **Learning Objective**: Mount a clean, responsive drawing workspace using Cytoscape.js.
 * **Tasks**:
-  1. Create `/components/visualizer/canvas.tsx` as a Client Component. Protect it against SSR crashes using dynamic client-side mounting inside a running component `useEffect` block.
-  2. Implement a cytoscape stylesheet that distinguishes normal, active, visited, candidate, and rejected elements.
-  3. Load node dragging coordinates inside cytoscape and setup event listeners: tapping the canvas drops a new node; clicking two nodes sequentially connects them with an edge; and tapping an edge pops a floating form input to edit its numeric weight.
+  1. Create `/components/visualizer/canvas.tsx` as a Client Component. Protect against SSR issues using dynamic loader configs in React pages.
+  2. Implement a cytoscape stylesheet that distinguishes normal, active, visited, candidate (amber dashed), accepted (emerald solid 5px, custom color badges for text), and rejected elements.
+  3. Load node dragging coordinates inside cytoscape and setup event listeners: tapping the canvas drops a new node; clicking two nodes sequentially connects them; tapping an edge pops a floating form input to edit its numeric weight.
+  4. Register double-tap listeners inside Cytoscape: double-tapping empty canvas adds a node instantly; double-tapping any node highlights it vibrant yellow (`node-doubletapped`) and triggers a backdrop modal listing other nodes inside a dropdown with edge weight controls to create connection spans rapidly.
 
 ### Day 3: Custom Hook for Graph Mutations
 * **Learning Objective**: Manage the list of nodes, edges, connections, and coordinates.

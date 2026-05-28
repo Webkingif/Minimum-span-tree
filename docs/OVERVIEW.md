@@ -52,6 +52,7 @@ The applications uses **Snapshot-Driven Playback Architecture**. Rather than att
 1. **Zero Race Conditions**: If a user drags a node or pauses halfway through, there are no active native JavaScript timeouts or background intervals conflicting with the canvas state.
 2. **Reverse Stepping (Time Travel)**: Because the entire sequence of steps is pre-compiled, we can move backwards to previous steps (using the decrement operator) as easily as we can move forwards.
 3. **Scrubbable Timeline**: Users can drag the timeline scrubber to any arbitrary step immediately. This is achieved by setting the array index state in React, which triggers a complete visual style update.
+4. **Dynamic Gesture Core**: Includes high-priority double-tap gestures: double-tapping empty canvas creates a new node at the tap coordinates, while double-tapping an existing node changes its background color to yellow and opens a custom pop-up modal to select an endpoint node and a weight for quick connection creation.
 
 ---
 

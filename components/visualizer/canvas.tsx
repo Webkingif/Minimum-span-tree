@@ -4,9 +4,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import { GraphData, VisualizerStep } from '@/types/graph';
 import { Trash2, Edit3, PlusCircle, ArrowUpRight, Move } from 'lucide-react';
 import { cn } from '@/lib/utils';
-
-// We import Cytoscape dynamically in UseEffect to avoid Next SSR issues
-let cytoscape: any = null;
+import cytoscape from 'cytoscape';
 
 interface CanvasProps {
   graph: GraphData;
@@ -40,21 +38,38 @@ export default function Canvas({
   const containerRef = useRef<HTMLDivElement>(null);
   const cyRef = useRef<any>(null);
   const [selectedSourceId, setSelectedSourceId] = useState<string | null>(null);
+
+  // Maintain up-to-date refs for Cytoscape event handlers to completely bypass design-time stale closures
+  const stateRef = useRef({ graph, isAnimationActive, mode, selectedSourceId });
+  useEffect(() => {
+    stateRef.current = { graph, isAnimationActive, mode, selectedSourceId };
+  }, [graph, isAnimationActive, mode, selectedSourceId]);
   
   // Weight editor state
   const [editingEdge, setEditingEdge] = useState<{ id: string; weight: number; x: number; y: number } | null>(null);
 
+  // Double tapped node state for edge creation
+  const [doubleTappedNodeId, setDoubleTappedNodeId] = useState<string | null>(null);
+  const [selectedTargetNodeId, setSelectedTargetNodeId] = useState<string>('');
+  const [newEdgeWeight, setNewEdgeWeight] = useState<number>(5);
+
+  // Sync / Clean up double-tapped selection if that node gets deleted
+  useEffect(() => {
+    if (doubleTappedNodeId) {
+      const exists = graph.nodes.some((n) => n.id === doubleTappedNodeId);
+      if (!exists) {
+        const timer = setTimeout(() => {
+          setDoubleTappedNodeId(null);
+          setSelectedTargetNodeId('');
+        }, 0);
+        return () => clearTimeout(timer);
+      }
+    }
+  }, [graph.nodes, doubleTappedNodeId]);
+
   // Initialize Cytoscape.js once on client-side
   useEffect(() => {
-    if (typeof window !== 'undefined' && !cytoscape) {
-      // Lazy load standard cytoscape on the browser
-      import('cytoscape').then((module) => {
-        cytoscape = module.default;
-        initCytoscape();
-      });
-    } else if (cytoscape) {
-      initCytoscape();
-    }
+    initCytoscape();
 
     // Windows resize listener
     const handleWindowResize = () => {
@@ -102,7 +117,7 @@ export default function Canvas({
             'width': nodeWidth,
             'height': nodeHeight,
             'transition-property': 'background-color, border-color, border-width, box-shadow',
-            'transition-duration': '0.15s',
+            'transition-duration': 150,
           },
         },
         {
@@ -121,7 +136,7 @@ export default function Canvas({
             'text-margin-y': -2,
             'curve-style': 'haystack', // High performance straight lines
             'transition-property': 'line-color, width, line-style',
-            'transition-duration': '0.15s',
+            'transition-duration': 150,
           },
         },
         {
@@ -129,6 +144,15 @@ export default function Canvas({
           style: {
             'border-color': '#6366f1', // Indigo-500
             'border-width': '3px',
+          },
+        },
+        {
+          selector: '.node-doubletapped',
+          style: {
+            'background-color': '#fef08a', // vibrant yellow background (yellow-200)
+            'border-color': '#eab308', // yellow-500 border
+            'border-width': '4px',
+            'color': '#854d0e', // yellow-800 text
           },
         },
         {
@@ -146,7 +170,7 @@ export default function Canvas({
 
     // Handle Drag ends
     cyRef.current.on('free', 'node', (evt: any) => {
-      if (isAnimationActive) return;
+      if (stateRef.current.isAnimationActive) return;
       const node = evt.target;
       const pos = node.position();
       onUpdateNodePosition(node.id(), pos.x, pos.y);
@@ -160,10 +184,10 @@ export default function Canvas({
       // Handle Weight Editor removal
       setEditingEdge(null);
 
-      if (isAnimationActive) return;
+      if (stateRef.current.isAnimationActive) return;
 
       if (isCanvas) {
-        if (mode === 'addNode') {
+        if (stateRef.current.mode === 'addNode') {
           const renderedPos = evt.position;
           onAddNode(renderedPos.x, renderedPos.y);
         }
@@ -171,15 +195,15 @@ export default function Canvas({
       } else if (target.isNode()) {
         const nodeId = target.id();
 
-        if (mode === 'delete') {
+        if (stateRef.current.mode === 'delete') {
           onDeleteNode(nodeId);
           setSelectedSourceId(null);
-        } else if (mode === 'addEdge') {
-          if (!selectedSourceId) {
+        } else if (stateRef.current.mode === 'addEdge') {
+          if (!stateRef.current.selectedSourceId) {
             setSelectedSourceId(nodeId);
           } else {
-            if (selectedSourceId !== nodeId) {
-              onAddEdge(selectedSourceId, nodeId, 5); // Default weight 5
+            if (stateRef.current.selectedSourceId !== nodeId) {
+              onAddEdge(stateRef.current.selectedSourceId, nodeId, 5); // Default weight 5
               setSelectedSourceId(null);
             } else {
               // Clicked same node, toggle off
@@ -189,10 +213,9 @@ export default function Canvas({
         }
       } else if (target.isEdge()) {
         const edgeId = target.id();
-        if (mode === 'delete') {
+        if (stateRef.current.mode === 'delete') {
           onDeleteEdge(edgeId);
         } else {
-          // Double-tap or standard selected weight prompt
           // Get the midpoint of the edge for placing input
           const midpoint = target.midpoint();
           const weight = target.data('weight');
@@ -202,6 +225,29 @@ export default function Canvas({
             x: midpoint.x,
             y: midpoint.y,
           });
+        }
+      }
+    });
+
+    // Handle double tap/click on Canvas or on Nodes
+    cyRef.current.on('dbltap', (evt: any) => {
+      if (stateRef.current.isAnimationActive) return;
+      const target = evt.target;
+      const isCanvas = target === cyRef.current;
+
+      if (isCanvas) {
+        if (stateRef.current.mode !== 'addNode') {
+          const renderedPos = evt.position;
+          onAddNode(renderedPos.x, renderedPos.y);
+          setSelectedSourceId(null);
+        }
+      } else if (target !== cyRef.current && typeof target.isNode === 'function' && target.isNode()) {
+        const nodeId = target.id();
+        setDoubleTappedNodeId(nodeId);
+        // Pre-select the first other node if existing
+        const otherNodes = stateRef.current.graph.nodes.filter((n) => n.id !== nodeId);
+        if (otherNodes.length > 0) {
+          setSelectedTargetNodeId(otherNodes[0].id);
         }
       }
     });
@@ -256,6 +302,13 @@ export default function Canvas({
 
     // Update or add edges
     graph.edges.forEach((edge) => {
+      // Safely verify that both source and target node elements exist in cytoscape before rendering edge
+      const sourceNode = cy.getElementById(edge.source);
+      const targetNode = cy.getElementById(edge.target);
+      if (sourceNode.length === 0 || targetNode.length === 0) {
+        return;
+      }
+
       const cyEdge = cy.getElementById(edge.id);
       if (cyEdge.length > 0) {
         cyEdge.data('weight', edge.weight);
@@ -322,6 +375,13 @@ export default function Canvas({
       });
     }
 
+    if (!isAnimationActive && doubleTappedNodeId) {
+      const cyNode = cy.getElementById(doubleTappedNodeId);
+      if (cyNode.length > 0) {
+        cyNode.addClass('node-doubletapped');
+      }
+    }
+
     // Update stylesheet rules on the fly for animation support
     cy.style()
       // Animation Node Styling
@@ -347,28 +407,42 @@ export default function Canvas({
       // Custom edge highlights
       .selector('.edge-candidate')
       .style({
-        'line-color': '#f59e0b', // Amber-500
-        'width': isMobile ? '5px' : '4px',
+        'line-color': '#f59e0b', // Dashed golden/amber color
+        'width': '3.5px',
         'line-style': 'dashed',
+        'color': '#b45309', // Amber-700
+        'text-background-color': '#fef3c7', // Soft amber background
+        'text-background-opacity': 1,
+        'text-background-padding': '4px',
       })
       .selector('.edge-accepted')
       .style({
-        'line-color': '#10b981', // Emerald-500
-        'width': isMobile ? '5px' : '4px',
+        'line-color': '#10b981', // Vibrant emerald green
+        'width': '5px', // Bold 5px and distinct
         'line-style': 'solid',
+        'color': '#047857', // Deep green for high-contrast legible weight label
+        'text-background-color': '#ecfdf5', // Soft light green highlight badge to isolate weight label
+        'text-background-opacity': 1,
+        'text-background-padding': '4px',
       })
       .selector('.edge-rejected')
       .style({
-        'line-color': '#ef4444', // Red-500
-        'width': isMobile ? '3.5px' : '2.5px',
+        'line-color': '#ef4444', // Thin, dotted red lines
+        'width': '2px',
         'line-style': 'dotted',
-        'color': '#ef4444',
+        'color': '#b91c1c', // Red-700
+        'text-background-color': '#fee2e2', // Soft red background
+        'text-background-opacity': 1,
+        'text-background-padding': '4px',
       })
       .selector('.edge-neutral')
       .style({
-        'line-color': '#f1f5f9', // Very dimmed neutral slate since it's inactive
-        'width': isMobile ? '2.5px' : '1.5px',
-        'opacity': 0.4,
+        'line-color': '#cbd5e1', // Highly desaturated neutral slate (using a slightly darker gray than pure white-ish f1f5f9 for good text legibility)
+        'width': '1.5px', // thin
+        'opacity': 0.4, // partially translucent
+        'color': '#64748b',
+        'text-background-color': '#ffffff',
+        'text-background-opacity': 0.4,
       })
       // Custom edit state helpers
       .selector('.source-highlight')
@@ -377,8 +451,15 @@ export default function Canvas({
         'border-width': '3.5px',
         'background-color': '#e0e7ff',
       })
+      .selector('.node-doubletapped')
+      .style({
+        'background-color': '#fef08a', // vibrant yellow background (yellow-200)
+        'border-color': '#eab308', // yellow-500 border
+        'border-width': '4px',
+        'color': '#854d0e', // yellow-800 text
+      })
       .update();
-  }, [isAnimationActive, currentStep, isMobile]);
+  }, [isAnimationActive, currentStep, isMobile, doubleTappedNodeId]);
 
   // Automatically fit nodes to canvas viewport if size changes or standard elements reset
   const handleAutoLayout = () => {
@@ -612,6 +693,98 @@ export default function Canvas({
             </form>
           </div>
         )
+      )}
+
+      {/* Double-tap Connection Modal Overlay */}
+      {doubleTappedNodeId && (
+        <div id="connect-node-modal-backdrop" className="fixed inset-0 bg-slate-900/60 backdrop-blur-[2px] z-50 flex items-center justify-center p-4">
+          <div
+            id="connect-node-modal-container"
+            className="bg-white rounded-3xl shadow-2xl border border-slate-200 w-full max-w-md p-6 animate-in zoom-in-95 duration-200 relative text-left"
+          >
+            <h3 id="connect-modal-title" className="text-base font-bold text-slate-800 mb-1">
+              Create New Edge
+            </h3>
+            <p className="text-xs text-slate-500 mb-4">
+              Select which node you want to connect <span className="font-bold text-amber-600 bg-amber-50 px-2 py-0.5 rounded-md border border-amber-100">
+                Node {graph.nodes.find((n) => n.id === doubleTappedNodeId)?.label || ''}
+              </span> with.
+            </p>
+
+            <form
+              onSubmit={(e) => {
+                e.preventDefault();
+                if (selectedTargetNodeId) {
+                  onAddEdge(doubleTappedNodeId, selectedTargetNodeId, newEdgeWeight);
+                  setDoubleTappedNodeId(null);
+                  setSelectedTargetNodeId('');
+                  setNewEdgeWeight(5);
+                }
+              }}
+              className="space-y-4"
+            >
+              <div>
+                <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-1.5">
+                  Select Target Node
+                </label>
+                <select
+                  id="target-node-select"
+                  value={selectedTargetNodeId}
+                  onChange={(e) => setSelectedTargetNodeId(e.target.value)}
+                  className="w-full bg-slate-50 border border-slate-200 px-4 py-3 rounded-2xl focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:bg-white text-sm font-semibold text-slate-700 cursor-pointer"
+                >
+                  {graph.nodes.filter((n) => n.id !== doubleTappedNodeId).length === 0 ? (
+                    <option value="">No other nodes to connect to</option>
+                  ) : (
+                    graph.nodes
+                      .filter((n) => n.id !== doubleTappedNodeId)
+                      .map((node) => (
+                        <option key={node.id} value={node.id}>
+                          Node {node.label}
+                        </option>
+                      ))
+                  )}
+                </select>
+              </div>
+
+              <div>
+                <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-1.5">
+                  Edge Weight (1 - 99)
+                </label>
+                <input
+                  id="target-node-weight-input"
+                  type="number"
+                  min="1"
+                  max="99"
+                  value={newEdgeWeight}
+                  onChange={(e) => setNewEdgeWeight(Math.max(1, parseInt(e.target.value, 10) || 1))}
+                  className="w-full bg-slate-50 border border-slate-200 px-4 py-3 text-sm font-mono font-bold text-slate-800 rounded-2xl focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:bg-white"
+                />
+              </div>
+
+              <div className="flex gap-2.5 pt-2">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setDoubleTappedNodeId(null);
+                    setSelectedTargetNodeId('');
+                    setNewEdgeWeight(5);
+                  }}
+                  className="flex-1 py-3 border border-slate-200 hover:bg-slate-50 rounded-2xl text-xs font-bold text-slate-500 transition-all cursor-pointer text-center"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={!selectedTargetNodeId}
+                  className="flex-1 py-3 bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed text-white rounded-2xl text-xs font-bold shadow-lg shadow-indigo-100 transition-all cursor-pointer text-center"
+                >
+                  Add Edge
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
       )}
 
       {/* Toolbar Options on Bottom Right */}

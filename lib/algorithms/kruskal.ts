@@ -14,7 +14,7 @@ class UnionFind {
   }
 
   find(id: string): string {
-    if (this.parent[id] === id) {
+    if (!this.parent[id] || this.parent[id] === id) {
       return id;
     }
     // Path compression
@@ -46,7 +46,12 @@ export class KruskalAlgorithm implements AlgorithmGenerator {
   generateSteps(graph: GraphData): VisualizerStep[] {
     const steps: VisualizerStep[] = [];
     const nodes = graph.nodes;
-    const edges = [...graph.edges];
+    
+    // Defensive filter to omit any orphaned edges referencing non-existent nodes
+    const nodeIds = new Set(nodes.map((n) => n.id));
+    const edges = graph.edges.filter(
+      (edge) => nodeIds.has(edge.source) && nodeIds.has(edge.target)
+    );
 
     // Initialize blank tracking sets
     const mstEdgeIds: string[] = [];
