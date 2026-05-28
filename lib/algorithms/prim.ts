@@ -1,5 +1,77 @@
-import { GraphData, VisualizerStep, EdgeHighlightType, NodeHighlightType } from '@/types/graph';
+import { GraphData, VisualizerStep, GraphEdge, EdgeHighlightType, NodeHighlightType } from '@/types/graph';
 import { AlgorithmGenerator } from './types';
+
+/**
+ * A highly scalable Min-Heap implementation suited for Prim's, Dijkstra's, and A* algorithms.
+ * Stores elements ordered by a customizable priority (such as edge weight).
+ */
+class MinHeap<T> {
+  private heap: { element: T; priority: number }[] = [];
+
+  constructor() {}
+
+  get size(): number {
+    return this.heap.length;
+  }
+
+  insert(element: T, priority: number): void {
+    this.heap.push({ element, priority });
+    this.upHeap(this.heap.length - 1);
+  }
+
+  extractMin(): T | null {
+    if (this.heap.length === 0) return null;
+    const min = this.heap[0].element;
+    const last = this.heap.pop()!;
+    if (this.heap.length > 0) {
+      this.heap[0] = last;
+      this.downHeap(0);
+    }
+    return min;
+  }
+
+  peekMin(): T | null {
+    if (this.heap.length === 0) return null;
+    return this.heap[0].element;
+  }
+
+  // Debug tool/snapshot getter for education visual states
+  toArray(): T[] {
+    return this.heap.map(item => item.element);
+  }
+
+  private upHeap(index: number): void {
+    while (index > 0) {
+      const parentIndex = Math.floor((index - 1) / 2);
+      if (this.heap[index].priority >= this.heap[parentIndex].priority) break;
+      this.swap(index, parentIndex);
+      index = parentIndex;
+    }
+  }
+
+  private downHeap(index: number): void {
+    const length = this.heap.length;
+    while (2 * index + 1 < length) {
+      let leftChild = 2 * index + 1;
+      let rightChild = leftChild + 1;
+      let smallest = leftChild;
+
+      if (rightChild < length && this.heap[rightChild].priority < this.heap[leftChild].priority) {
+        smallest = rightChild;
+      }
+
+      if (this.heap[index].priority <= this.heap[smallest].priority) break;
+      this.swap(index, smallest);
+      index = smallest;
+    }
+  }
+
+  private swap(i: number, j: number): void {
+    const temp = this.heap[i];
+    this.heap[i] = this.heap[j];
+    this.heap[j] = temp;
+  }
+}
 
 export class PrimAlgorithm implements AlgorithmGenerator {
   generateSteps(graph: GraphData, startNodeId?: string): VisualizerStep[] {
@@ -7,15 +79,18 @@ export class PrimAlgorithm implements AlgorithmGenerator {
     const nodes = graph.nodes;
     const edges = graph.edges;
 
-    // Edge check
+    // Prevent rendering of empty workspace networks
     if (nodes.length === 0) return [];
 
-    // Select start node
-    const startNode = nodes.find((n) => n.id === startNodeId) || nodes[0];
+    // Map labels easily for educational message layouts
     const labelMap = new Map<string, string>(
       nodes.map((node) => [node.id, node.label])
     );
 
+    // Step 0: Identify start node (Default to the first item created inside useGraphState)
+    const startNode = nodes.find((n) => n.id === startNodeId) || nodes[0];
+
+    // Data structure initialization
     const visitedNodes = new Set<string>();
     const mstEdgeIds: string[] = [];
     let totalCost = 0;
@@ -24,7 +99,7 @@ export class PrimAlgorithm implements AlgorithmGenerator {
     const currentEdgeStates: Record<string, EdgeHighlightType> = {};
     const currentNodeStates: Record<string, NodeHighlightType> = {};
 
-    // Initial setup (Slate base)
+    // Initial state setup (All components start as slate neutral)
     edges.forEach((edge) => {
       currentEdgeStates[edge.id] = 'neutral';
     });
@@ -32,7 +107,21 @@ export class PrimAlgorithm implements AlgorithmGenerator {
       currentNodeStates[node.id] = 'neutral';
     });
 
-    // Step 0: Starting point selection
+    // Setup an Adjacency List for state traversal (Supports O(E log V))
+    const adjList: Record<string, { neighborId: string; edge: GraphEdge }[]> = {};
+    nodes.forEach(n => {
+      adjList[n.id] = [];
+    });
+    edges.forEach(edge => {
+      if (adjList[edge.source]) {
+        adjList[edge.source].push({ neighborId: edge.target, edge });
+      }
+      if (adjList[edge.target]) {
+        adjList[edge.target].push({ neighborId: edge.source, edge });
+      }
+    });
+
+    // Step 1: Push root node selection context step
     visitedNodes.add(startNode.id);
     currentNodeStates[startNode.id] = 'visited';
 
@@ -40,7 +129,7 @@ export class PrimAlgorithm implements AlgorithmGenerator {
       stepIndex: 0,
       stepType: 'CHECK_EDGE',
       description: `Starting Prim's Algorithm at source node ${startNode.label}.`,
-      subDescription: 'Initialize the tree with the root node. The algorithm will now grow the tree outward, one minimum edge at a time.',
+      subDescription: `Initializing spanning from arbitrary node ${startNode.label}. Visited nodes set: { ${startNode.label} }. Cut frontier is empty.`,
       edgeStates: { ...currentEdgeStates },
       nodeStates: { ...currentNodeStates },
       mstEdgeIds: [],
@@ -48,112 +137,117 @@ export class PrimAlgorithm implements AlgorithmGenerator {
       metrics: { comparisons: 0, heapSize: 0 },
     });
 
-    // Run until we span all nodes (or run out of reachable edges)
-    while (visitedNodes.size < nodes.length) {
-      // Find all frontier edges (edges that have exactly one node visited)
-      const frontierEdges: typeof edges = [];
-      const rejectedEdges: typeof edges = [];
+    // Instantiate our active Binary Min-Heap
+    const heap = new MinHeap<GraphEdge>();
 
-      edges.forEach((edge) => {
-        const hasSource = visitedNodes.has(edge.source);
-        const hasTarget = visitedNodes.has(edge.target);
+    // Add starting neighbors to the heap initially
+    adjList[startNode.id]?.forEach(({ edge }) => {
+      heap.insert(edge, edge.weight);
+    });
 
-        if ((hasSource && !hasTarget) || (!hasSource && hasTarget)) {
-          frontierEdges.push(edge);
-        } else if (hasSource && hasTarget) {
-          // If both ends are visited, and it's not and wasn't part of MST, represent as rejected to keep clean
-          if (!mstEdgeIds.includes(edge.id) && currentEdgeStates[edge.id] === 'neutral') {
-            rejectedEdges.push(edge);
-          }
+    // Run until we span all nodes in this connected network
+    while (visitedNodes.size < nodes.length && heap.size > 0) {
+      // Extract edge with smallest weight from active heap
+      const minEdgeRef = heap.extractMin();
+      if (!minEdgeRef) break;
+
+      comparisons++;
+
+      // Evaluate edge connectivity to detect cyclical returns
+      const u = minEdgeRef.source;
+      const v = minEdgeRef.target;
+      const uVisited = visitedNodes.has(u);
+      const vVisited = visitedNodes.has(v);
+
+      const sourceLabel = labelMap.get(u) || '';
+      const targetLabel = labelMap.get(v) || '';
+      const weightVal = minEdgeRef.weight;
+
+      // Skip if edge endpoints are already spanned (Redundant cycle)
+      if (uVisited && vVisited) {
+        // Step step check for Rejected edge
+        const oldState = currentEdgeStates[minEdgeRef.id];
+        if (oldState === 'neutral' || oldState === 'candidate') {
+          currentEdgeStates[minEdgeRef.id] = 'rejected';
+          steps.push({
+            stepIndex: steps.length,
+            stepType: 'REJECT_EDGE',
+            description: `Skipped cyclic edge (${sourceLabel}, ${targetLabel}) with weight ${weightVal}.`,
+            subDescription: `Both ${sourceLabel} and ${targetLabel} are already visited in the Spanned Tree. Discarding to avoid cycle.`,
+            edgeStates: { ...currentEdgeStates },
+            nodeStates: { ...currentNodeStates },
+            mstEdgeIds: [...mstEdgeIds],
+            totalMstCost: totalCost,
+            metrics: { comparisons, heapSize: heap.size },
+          });
         }
-      });
-
-      // Handle cyclic boundary updates
-      rejectedEdges.forEach((e) => {
-        currentEdgeStates[e.id] = 'rejected';
-      });
-
-      if (frontierEdges.length === 0) {
-        // Connected component finished (rest of elements are disconnected)
-        break;
+        continue;
       }
 
-      // Step comparisons: find the edge with minimum weight in frontier
-      comparisons += frontierEdges.length;
-      frontierEdges.sort((a, b) => a.weight - b.weight);
-      const chosenEdge = frontierEdges[0];
+      // Identify unvisited node targets
+      const unvisitedNodeId = uVisited ? v : u;
+      const unvisitedLabel = labelMap.get(unvisitedNodeId) || '';
 
-      const sourceLabel = labelMap.get(chosenEdge.source) || '';
-      const targetLabel = labelMap.get(chosenEdge.target) || '';
-      const weightVal = chosenEdge.weight;
-
-      // Identify the freshly traversed node
-      const nextNodeId = visitedNodes.has(chosenEdge.source)
-        ? chosenEdge.target
-        : chosenEdge.source;
-      const nextNodeLabel = labelMap.get(nextNodeId) || '';
-
-      // STEP A: Candidate/frontier review
+      // --- VISUAL SETUP: Highlight Candidate State ---
       const candidateStepEdgeStates = { ...currentEdgeStates };
       const candidateStepNodeStates = { ...currentNodeStates };
 
-      // Highlight frontier nodes & all eligible frontier edges
-      frontierEdges.forEach((fe) => {
-        if (fe.id !== chosenEdge.id) {
-          candidateStepEdgeStates[fe.id] = 'candidate'; // frontier indicator
+      // Highlight other elements currently available inside our binary Min-Heap frontier
+      heap.toArray().forEach((frontierEdge) => {
+        if (frontierEdge.id !== minEdgeRef.id && currentEdgeStates[frontierEdge.id] === 'neutral') {
+          candidateStepEdgeStates[frontierEdge.id] = 'candidate';
         }
       });
 
-      // Focus on selected chosen candidate
-      candidateStepEdgeStates[chosenEdge.id] = 'candidate';
-      candidateStepNodeStates[nextNodeId] = 'active';
+      candidateStepEdgeStates[minEdgeRef.id] = 'candidate';
+      candidateStepNodeStates[unvisitedNodeId] = 'active';
 
       steps.push({
         stepIndex: steps.length,
         stepType: 'CHECK_EDGE',
-        description: `Inspecting cut frontier. Chosen minimum edge (${sourceLabel}, ${targetLabel}) with weight ${weightVal}.`,
-        subDescription: `From the currently visited nodes, the edge (${sourceLabel}, ${targetLabel}) has the absolute lightest weight (${weightVal}) leading to unspanned territory.`,
+        description: `Inspecting minimum frontier edge: (${sourceLabel}, ${targetLabel}) with weight ${weightVal}.`,
+        subDescription: `This edge has the absolute lightest weight (${weightVal}) leading out of the current MST spanned footprint to Node ${unvisitedLabel}.`,
         edgeStates: candidateStepEdgeStates,
         nodeStates: candidateStepNodeStates,
         mstEdgeIds: [...mstEdgeIds],
         totalMstCost: totalCost,
-        metrics: { comparisons, heapSize: frontierEdges.length },
+        metrics: { comparisons, heapSize: heap.size + 1 },
       });
 
-      // STEP B: Append node and edge to the Spanned tree
-      visitedNodes.add(nextNodeId);
-      mstEdgeIds.push(chosenEdge.id);
-      totalCost += chosenEdge.weight;
+      // --- EXPAND STEP: Span tree footprint ---
+      visitedNodes.add(unvisitedNodeId);
+      mstEdgeIds.push(minEdgeRef.id);
+      totalCost += weightVal;
 
-      currentEdgeStates[chosenEdge.id] = 'accepted';
-      currentNodeStates[nextNodeId] = 'visited';
+      currentEdgeStates[minEdgeRef.id] = 'accepted';
+      currentNodeStates[unvisitedNodeId] = 'visited';
 
-      // Decay other frontier flags back to neutral to visual refresh
-      frontierEdges.forEach((fe) => {
-        if (fe.id !== chosenEdge.id) {
-          currentEdgeStates[fe.id] = 'neutral';
+      // Load newly reachable adjacency list borders into our active Min-Heap
+      adjList[unvisitedNodeId]?.forEach(({ neighborId, edge }) => {
+        if (!visitedNodes.has(neighborId)) {
+          heap.insert(edge, edge.weight);
         }
       });
 
       steps.push({
         stepIndex: steps.length,
         stepType: 'ACCEPT_EDGE',
-        description: `Spanned node ${nextNodeLabel} via edge (${sourceLabel}, ${targetLabel}).`,
-        subDescription: `Node ${nextNodeLabel} is now part of the minimum spanning tree. Adding ${weightVal} to the aggregate algorithm cost.`,
+        description: `Accepted edge (${sourceLabel}, ${targetLabel}). Node ${unvisitedLabel} is now Spanned.`,
+        subDescription: `Appended ${unvisitedLabel} to the spanned set. Discovered edges total cost expanded to ${totalCost}. Added new neighbor edges to the heap.`,
         edgeStates: { ...currentEdgeStates },
         nodeStates: { ...currentNodeStates },
         mstEdgeIds: [...mstEdgeIds],
         totalMstCost: totalCost,
-        metrics: { comparisons, heapSize: frontierEdges.length - 1 },
+        metrics: { comparisons, heapSize: heap.size },
       });
     }
 
-    // Final Completion Step
+    // Capture visual completeness
     steps.push({
       stepIndex: steps.length,
       stepType: 'COMPLETE',
-      description: 'Completion: Prim\'s Algorithm complete.',
-      subDescription: `Spanned all reachable components from source node ${startNode.label}. Minimum Spanning Tree discovered with optimal aggregate cost of ${totalCost}.`,
+      description: "Completion: Prim's Spanning successfully finished.",
+      subDescription: `Minimum Spanning Tree discovered. Connected all ${visitedNodes.size} reachable nodes using ${mstEdgeIds.length} edges with an aggregate path footprint of ${totalCost}.`,
       edgeStates: { ...currentEdgeStates },
       nodeStates: { ...currentNodeStates },
       mstEdgeIds: [...mstEdgeIds],
@@ -164,4 +258,6 @@ export class PrimAlgorithm implements AlgorithmGenerator {
     return steps;
   }
 }
+
 export default PrimAlgorithm;
+

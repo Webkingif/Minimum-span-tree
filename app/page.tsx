@@ -5,6 +5,9 @@ import Header from '@/components/layout/header';
 import Sidebar from '@/components/layout/sidebar';
 import Footer from '@/components/layout/footer';
 import Canvas from '@/components/visualizer/canvas';
+import Pseudocode from '@/components/visualizer/pseudocode';
+import ReusableStatsPanel from '@/components/visualizer/stats-panel';
+import CompletionModal from '@/components/visualizer/completion-modal';
 import { useGraphState } from '@/hooks/use-graph-state';
 import { useVisualizerTimeline } from '@/hooks/use-visualizer-timeline';
 import { KruskalAlgorithm } from '@/lib/algorithms/kruskal';
@@ -41,7 +44,7 @@ export default function Home() {
       if (algorithm === 'kruskal') {
         return kruskalCompiler.generateSteps(graph);
       } else {
-        // For Prim, dynamically start on the first node available
+        // For Prim, dynamically start on the first node available in the array
         const defaultStartId = graph.nodes[0]?.id;
         return primCompiler.generateSteps(graph, defaultStartId);
       }
@@ -63,14 +66,28 @@ export default function Home() {
     nextStep,
     prevStep,
     setSpeed,
+    setStepIndex,
     hasTimeline,
     totalSteps,
   } = useVisualizerTimeline(timeline);
 
+  // Render-time status tracking to avoid cascading effect renders
+  const [prevStatus, setPrevStatus] = useState(status);
+  const [hasDismissedCompletedModal, setHasDismissedCompletedModal] = useState<boolean>(false);
+
+  if (status !== prevStatus) {
+    setPrevStatus(status);
+    if (status !== 'completed') {
+      setHasDismissedCompletedModal(false);
+    }
+  }
+
+  const isModalOpen = status === 'completed' && !hasDismissedCompletedModal;
+
   const isAnimationActive = status === 'playing' || status === 'paused' || status === 'completed';
   const effectiveMode = isAnimationActive ? 'select' : workspaceMode;
 
-  // Helper displays
+  // Helper displays for side banners
   const selectedAlgoDetail = useMemo(() => {
     if (algorithm === 'kruskal') {
       return {
@@ -134,29 +151,63 @@ export default function Home() {
         />
 
         {/* Center Sandbox Canvas */}
-        <main className="flex-1 relative p-6 flex flex-col bg-slate-50/50 min-w-0">
-          <Canvas
-            graph={graph}
-            currentStep={currentStep}
-            mode={effectiveMode}
-            onChangeMode={setWorkspaceMode}
-            onAddNode={addNode}
-            onUpdateNodePosition={updateNodePosition}
-            onDeleteNode={deleteNode}
-            onAddEdge={addEdge}
-            onUpdateEdgeWeight={updateEdgeWeight}
-            onDeleteEdge={deleteEdge}
-            isAnimationActive={isAnimationActive}
-          />
+        <main className="flex-1 relative p-6 flex flex-row gap-6 bg-slate-50/50 min-w-0">
+          
+          {/* Main Cytoscape Canvas view */}
+          <div className="flex-1 flex flex-col min-w-0 h-full">
+            <Canvas
+              graph={graph}
+              currentStep={currentStep}
+              mode={effectiveMode}
+              onChangeMode={setWorkspaceMode}
+              onAddNode={addNode}
+              onUpdateNodePosition={updateNodePosition}
+              onDeleteNode={deleteNode}
+              onAddEdge={addEdge}
+              onUpdateEdgeWeight={updateEdgeWeight}
+              onDeleteEdge={deleteEdge}
+              isAnimationActive={isAnimationActive}
+            />
+          </div>
+
+          {/* Right Hand Pseudocode Trace & Statistics Board */}
+          <div className="w-80 flex flex-col gap-6 shrink-0 h-full overflow-y-auto pr-1">
+            <Pseudocode
+              algorithm={algorithm}
+              currentStep={currentStep}
+              hasTimeline={hasTimeline}
+            />
+            
+            <ReusableStatsPanel
+              algorithm={algorithm}
+              graph={graph}
+              currentStep={currentStep}
+              hasTimeline={hasTimeline}
+              totalSteps={totalSteps}
+            />
+          </div>
         </main>
       </div>
 
-      {/* Step Explanation Terminal */}
+      {/* Step Explanation Terminal with integrated Scrubber */}
       <Footer
         currentStep={currentStep}
         algorithm={algorithm}
         hasTimeline={hasTimeline}
+        currentStepIndex={currentStepIndex}
         totalSteps={totalSteps}
+        onStepIndexChange={setStepIndex}
+        status={status}
+      />
+
+      {/* Congratulations Completion Modal */}
+      <CompletionModal
+        isOpen={isModalOpen}
+        onClose={() => setHasDismissedCompletedModal(true)}
+        onReset={reset}
+        algorithm={algorithm}
+        graph={graph}
+        finalStep={timeline[timeline.length - 1] || null}
       />
     </div>
   );
