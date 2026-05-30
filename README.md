@@ -2,7 +2,7 @@
 
 An educational, high-fidelity, interactive computer science laboratory designed to construct weighted graphs dynamically and visualize optimal tree spanning programs (Prim's & Kruskal's algorithms) in real-time. Built specifically as a premium showcase application with polished user experiences, responsive layouts, and modern typography.
 
-**🔗 Live Demo:** [Minimum Spanning Tree Visualizer](https://ais-pre-rvnlgu6q273seygq6cj2j6-163134622239.europe-west2.run.app)  
+**🔗 Live Demo:** [Minimum Spanning Tree Visualizer](https://idowuminimumspantree.netlify.app/)  
 **👤 Developer:** Idowu Oluwafemi (Webkingif)
 
 ---
