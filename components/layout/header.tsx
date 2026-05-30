@@ -1,8 +1,9 @@
 'use client';
 
 import React from 'react';
-import { Network, Activity } from 'lucide-react';
+import { Network, Activity, HelpCircle } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import Link from 'next/link';
 
 interface HeaderProps {
   algorithm: 'kruskal' | 'prim';
@@ -102,6 +103,17 @@ export default function Header({
             </span>
           </div>
         </div>
+
+        <div className="h-6 w-px bg-slate-200" />
+
+        {/* Documentation / Guide */}
+        <Link
+          id="header-help-guide-link"
+          href="/help"
+          className="flex items-center gap-1.5 px-3.5 py-2 text-xs font-bold text-indigo-600 hover:text-indigo-700 bg-indigo-50 hover:bg-indigo-100/70 border border-indigo-100/60 rounded-xl transition-all cursor-pointer shadow-xs uppercase tracking-wide"
+        >
+          <HelpCircle className="w-4 h-4 text-indigo-500 shrink-0 animate-pulse" /> Help Guide
+        </Link>
       </div>
     </header>
   );

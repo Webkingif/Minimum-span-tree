@@ -1,9 +1,10 @@
 'use client';
 
 import React from 'react';
-import { Play, Pause, RotateCcw, ChevronRight, ChevronLeft, Layers, Sparkles, BarChart2, ShieldAlert } from 'lucide-react';
+import { Play, Pause, RotateCcw, ChevronRight, ChevronLeft, Layers, Sparkles, BarChart2, ShieldAlert, Award, HelpCircle } from 'lucide-react';
 import { PlaybackStatus } from '@/types/graph';
 import { cn } from '@/lib/utils';
+import Link from 'next/link';
 
 interface SidebarProps {
   status: PlaybackStatus;
@@ -22,6 +23,7 @@ interface SidebarProps {
   onClearGraph: () => void;
   isAnimationActive: boolean;
   algorithmName: string;
+  onReopenModal?: () => void;
 }
 
 export default function Sidebar({
@@ -40,6 +42,7 @@ export default function Sidebar({
   onClearGraph,
   isAnimationActive,
   algorithmName,
+  onReopenModal,
 }: SidebarProps) {
   return (
     <aside className="w-76 border-r border-slate-200 bg-white flex flex-col shrink-0 select-none overflow-y-auto">
@@ -125,6 +128,28 @@ export default function Sidebar({
               className="w-full h-1 bg-slate-100 rounded-lg appearance-none cursor-pointer accent-indigo-600 focus:outline-none"
             />
           </div>
+
+          {isAnimationActive && (
+            <div className="pt-2 space-y-2 animate-in fade-in slide-in-from-bottom-2 duration-200">
+              {onReopenModal && (
+                <button
+                  id="reopen-completion-modal-btn"
+                  onClick={onReopenModal}
+                  className="w-full flex items-center justify-center gap-1.5 px-3 py-2.5 bg-emerald-50 hover:bg-emerald-100/80 text-emerald-700 border border-emerald-200/50 rounded-xl text-xs font-bold transition-all cursor-pointer uppercase shadow-sm active:scale-95 animate-fade-in"
+                >
+                  <Award className="w-4 h-4 text-emerald-600" /> Reopen Completion Modal
+                </button>
+              )}
+              
+              <button
+                id="sidebar-reset-env-btn"
+                onClick={onReset}
+                className="w-full flex items-center justify-center gap-1.5 px-3 py-2.5 bg-rose-50 hover:bg-rose-100/85 text-rose-700 border border-rose-200/50 rounded-xl text-xs font-bold transition-all cursor-pointer uppercase shadow-sm active:scale-95 animate-fade-in"
+              >
+                <RotateCcw className="w-4 h-4 text-rose-600" /> Reset Environment
+              </button>
+            </div>
+          )}
         </section>
 
         {/* Graph Presets Section */}
@@ -183,6 +208,18 @@ export default function Sidebar({
               Clear Graph Workspace
             </button>
           )}
+        </section>
+
+        {/* Help & Documentation CTA */}
+        <section className="pt-2">
+          <Link
+            id="sidebar-help-guide-link"
+            href="/help"
+            className="w-full flex items-center justify-center gap-2 px-3 py-2.5 bg-indigo-50 hover:bg-indigo-100/75 text-indigo-700 border border-indigo-200/50 rounded-xl text-xs font-bold transition-all cursor-pointer uppercase shadow-sm active:scale-95"
+          >
+            <HelpCircle className="w-4 h-4 text-indigo-600 animate-pulse" />
+            Interactive Help Guide
+          </Link>
         </section>
 
         {/* Architecture Card */}

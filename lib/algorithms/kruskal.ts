@@ -177,12 +177,17 @@ export class KruskalAlgorithm implements AlgorithmGenerator {
     });
 
     // Final Completion Step
+    const finalEdgeStates: Record<string, EdgeHighlightType> = {};
+    graph.edges.forEach((edge) => {
+      finalEdgeStates[edge.id] = mstEdgeIds.includes(edge.id) ? 'accepted' : 'rejected';
+    });
+
     steps.push({
       stepIndex: steps.length,
       stepType: 'COMPLETE',
       description: 'Completion: Kruskal\'s Algorithm complete.',
       subDescription: `Minimum Spanning Tree discovered successfully. Spanned all reachable nodes with a final minimal core metric cost of ${totalCost}.`,
-      edgeStates: { ...currentEdgeStates },
+      edgeStates: finalEdgeStates,
       nodeStates: { ...currentNodeStates },
       mstEdgeIds: [...mstEdgeIds],
       totalMstCost: totalCost,

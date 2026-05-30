@@ -2,6 +2,8 @@
 
 import React, { useState, useMemo, useEffect } from 'react';
 import dynamic from 'next/dynamic';
+import Link from 'next/link';
+import { HelpCircle } from 'lucide-react';
 import Header from '@/components/layout/header';
 import Sidebar from '@/components/layout/sidebar';
 import Footer from '@/components/layout/footer';
@@ -106,6 +108,13 @@ export default function Home() {
   const isAnimationActive = status === 'playing' || status === 'paused' || status === 'completed';
   const effectiveMode = isAnimationActive ? 'select' : workspaceMode;
 
+  const handleReopenCompletionModal = () => {
+    if (status !== 'completed' && totalSteps > 0) {
+      setStepIndex(totalSteps - 1);
+    }
+    setHasDismissedCompletedModal(false);
+  };
+
   // Helper displays for side banners
   const selectedAlgoDetail = useMemo(() => {
     if (algorithm === 'kruskal') {
@@ -151,6 +160,14 @@ export default function Home() {
           </div>
 
           <div className="flex items-center gap-2">
+            <Link
+              id="mobile-help-link"
+              href="/help"
+              className="p-1.5 bg-slate-50 hover:bg-slate-100 border border-slate-200 rounded-xl flex items-center justify-center text-slate-600 transition-all cursor-pointer"
+              title="Help and Guides"
+            >
+              <HelpCircle className="w-3.5 h-3.5 text-indigo-500" />
+            </Link>
             {/* Quick Engine Switcher Toggle Pill */}
             <div className="bg-slate-100 p-0.5 rounded-xl border border-slate-200/40 flex items-center">
               <button
@@ -184,6 +201,25 @@ export default function Home() {
               <span className="text-[8px] text-emerald-600 font-bold uppercase tracking-wide">Cst</span>
               <span className="font-mono text-xs font-black text-emerald-700">{activeMstCost}</span>
             </div>
+
+            {isAnimationActive && (
+              <div className="flex gap-1.5 items-center">
+                <button
+                  id="mobile-reopen-modal-btn"
+                  onClick={handleReopenCompletionModal}
+                  className="bg-emerald-50 border border-emerald-150 rounded-xl px-2.5 py-1.5 flex items-center gap-1 text-[9px] font-extrabold uppercase cursor-pointer transition-all active:scale-95 shadow-xs"
+                >
+                  🏆 Summary
+                </button>
+                <button
+                  id="mobile-reset-env-btn"
+                  onClick={reset}
+                  className="bg-rose-50 border border-rose-150 text-rose-700 rounded-xl px-2.5 py-1.5 flex items-center gap-1 text-[9px] font-extrabold uppercase cursor-pointer transition-all active:scale-95 shadow-xs"
+                >
+                  🔄 Reset Env
+                </button>
+              </div>
+            )}
           </div>
         </header>
 
@@ -202,6 +238,8 @@ export default function Home() {
             onDeleteEdge={deleteEdge}
             isAnimationActive={isAnimationActive}
             isMobile={true}
+            onReopenModal={handleReopenCompletionModal}
+            onResetEnv={reset}
           />
         </main>
 
@@ -463,8 +501,7 @@ export default function Home() {
 
       {/* Main split work chamber */}
       <div className="flex flex-1 overflow-hidden min-h-0">
-        
-        {/* Left Hand Execution Console */}
+         {/* Left Hand Execution Console */}
         <Sidebar
           status={status}
           speed={speed}
@@ -487,6 +524,7 @@ export default function Home() {
           }}
           isAnimationActive={isAnimationActive}
           algorithmName={selectedAlgoDetail.short}
+          onReopenModal={handleReopenCompletionModal}
         />
 
         {/* Center Sandbox Canvas */}
@@ -507,6 +545,8 @@ export default function Home() {
               onDeleteEdge={deleteEdge}
               isAnimationActive={isAnimationActive}
               isMobile={false}
+              onReopenModal={handleReopenCompletionModal}
+              onResetEnv={reset}
             />
           </div>
 

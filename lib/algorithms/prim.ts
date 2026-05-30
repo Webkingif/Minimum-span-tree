@@ -248,12 +248,17 @@ export class PrimAlgorithm implements AlgorithmGenerator {
     }
 
     // Capture visual completeness
+    const finalEdgeStates: Record<string, EdgeHighlightType> = {};
+    graph.edges.forEach((edge) => {
+      finalEdgeStates[edge.id] = mstEdgeIds.includes(edge.id) ? 'accepted' : 'rejected';
+    });
+
     steps.push({
       stepIndex: steps.length,
       stepType: 'COMPLETE',
       description: "Completion: Prim's Spanning successfully finished.",
       subDescription: `Minimum Spanning Tree discovered. Connected all ${visitedNodes.size} reachable nodes using ${mstEdgeIds.length} edges with an aggregate path footprint of ${totalCost}.`,
-      edgeStates: { ...currentEdgeStates },
+      edgeStates: finalEdgeStates,
       nodeStates: { ...currentNodeStates },
       mstEdgeIds: [...mstEdgeIds],
       totalMstCost: totalCost,

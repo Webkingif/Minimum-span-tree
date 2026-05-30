@@ -2,7 +2,7 @@
 
 import React, { useEffect, useRef, useState } from 'react';
 import { GraphData, VisualizerStep } from '@/types/graph';
-import { Trash2, Edit3, PlusCircle, ArrowUpRight, Move } from 'lucide-react';
+import { Trash2, Edit3, PlusCircle, ArrowUpRight, Move, Award } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import cytoscape from 'cytoscape';
 
@@ -19,6 +19,8 @@ interface CanvasProps {
   onDeleteEdge: (id: string) => void;
   isAnimationActive: boolean;
   isMobile?: boolean;
+  onReopenModal?: () => void;
+  onResetEnv?: () => void;
 }
 
 export default function Canvas({
@@ -34,6 +36,8 @@ export default function Canvas({
   onDeleteEdge,
   isAnimationActive,
   isMobile = false,
+  onReopenModal,
+  onResetEnv,
 }: CanvasProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const cyRef = useRef<any>(null);
@@ -134,7 +138,7 @@ export default function Canvas({
             'text-background-padding': edgePadding,
             'text-background-shape': 'roundrectangle',
             'text-margin-y': -2,
-            'curve-style': 'haystack', // High performance straight lines
+            'curve-style': 'bezier', // Robust curved/straight lines supporting custom styling & labels
             'transition-property': 'line-color, width, line-style',
             'transition-duration': 150,
           },
@@ -160,6 +164,86 @@ export default function Canvas({
           style: {
             'line-color': '#6366f1',
             'width': isMobile ? '4.5px' : '3px',
+          },
+        },
+        {
+          selector: '.node-active',
+          style: {
+            'background-color': '#fef3c7', // Warm Amber fill
+            'border-color': '#f59e0b', // Amber-500 border
+            'border-width': '3px',
+            'color': '#92400e', // Dark Amber text
+          },
+        },
+        {
+          selector: '.node-visited',
+          style: {
+            'border-color': '#10b981', // Emerald border
+            'border-width': '3px',
+            'background-color': '#ecfdf5', // Light emerald tint to highlight MST Nodes
+          },
+        },
+        {
+          selector: '.node-neutral',
+          style: {
+            'background-color': '#ffffff',
+            'border-color': '#94a3b8',
+            'border-width': '2px',
+          },
+        },
+        {
+          selector: '.edge-candidate',
+          style: {
+            'line-color': '#f59e0b', // Dashed golden/amber color
+            'width': '3.5px',
+            'line-style': 'dashed',
+            'color': '#b45309', // Amber-700
+            'text-background-color': '#fef3c7', // Soft amber background
+            'text-background-opacity': 1,
+            'text-background-padding': '4px',
+          },
+        },
+        {
+          selector: '.edge-accepted',
+          style: {
+            'line-color': '#10b981', // Vibrant emerald green
+            'width': '5px', // Bold 5px and distinct
+            'line-style': 'solid',
+            'color': '#047857', // Deep green for high-contrast legible weight label
+            'text-background-color': '#ecfdf5', // Soft light green highlight badge to isolate weight label
+            'text-background-opacity': 1,
+            'text-background-padding': '4px',
+          },
+        },
+        {
+          selector: '.edge-rejected',
+          style: {
+            'line-color': '#ef4444', // Thin, dotted red lines
+            'width': '2px',
+            'line-style': 'dotted',
+            'color': '#b91c1c', // Red-700
+            'text-background-color': '#fee2e2', // Soft red background
+            'text-background-opacity': 1,
+            'text-background-padding': '4px',
+          },
+        },
+        {
+          selector: '.edge-neutral',
+          style: {
+            'line-color': '#cbd5e1', // Highly desaturated neutral slate
+            'width': '1.5px', // thin
+            'opacity': 0.4, // partially translucent
+            'color': '#64748b',
+            'text-background-color': '#ffffff',
+            'text-background-opacity': 0.4,
+          },
+        },
+        {
+          selector: '.source-highlight',
+          style: {
+            'border-color': '#4f46e5', // Deep Indigo source highlight
+            'border-width': '3.5px',
+            'background-color': '#e0e7ff',
           },
         },
       ],
@@ -354,10 +438,16 @@ export default function Canvas({
     if (!cy) return;
 
     // 1. Reset visual classes
-    cy.nodes().classes([]);
-    cy.edges().classes([]);
+    cy.elements().classes('');
 
     if (isAnimationActive && currentStep) {
+      const isCompleteStep = currentStep.stepType === 'COMPLETE';
+
+      if (isCompleteStep) {
+        // Unselect everything to make sure selection highlights are removed
+        cy.elements().unselect();
+      }
+
       // Apply Node Overrides
       Object.entries(currentStep.nodeStates).forEach(([nodeId, state]) => {
         const cyNode = cy.getElementById(nodeId);
@@ -370,7 +460,17 @@ export default function Canvas({
       Object.entries(currentStep.edgeStates).forEach(([edgeId, state]) => {
         const cyEdge = cy.getElementById(edgeId);
         if (cyEdge.length > 0) {
-          cyEdge.addClass(`edge-${state}`);
+          if (isCompleteStep) {
+            if (state === 'accepted') {
+              cyEdge.classes('edge-accepted');
+            } else if (state === 'rejected') {
+              cyEdge.classes('edge-rejected');
+            } else {
+              cyEdge.classes('');
+            }
+          } else {
+            cyEdge.addClass(`edge-${state}`);
+          }
         }
       });
     }
@@ -381,85 +481,7 @@ export default function Canvas({
         cyNode.addClass('node-doubletapped');
       }
     }
-
-    // Update stylesheet rules on the fly for animation support
-    cy.style()
-      // Animation Node Styling
-      .selector('.node-active')
-      .style({
-        'background-color': '#fef3c7', // Warm Amber fill
-        'border-color': '#f59e0b', // Amber-500 border
-        'border-width': '3px',
-        'color': '#92400e', // Dark Amber text
-      })
-      .selector('.node-visited')
-      .style({
-        'border-color': '#10b981', // Emerald border
-        'border-width': '3px',
-        'background-color': '#ecfdf5', // Light emerald tint to highlight MST Nodes
-      })
-      .selector('.node-neutral')
-      .style({
-        'background-color': '#ffffff',
-        'border-color': '#94a3b8',
-        'border-width': '2px',
-      })
-      // Custom edge highlights
-      .selector('.edge-candidate')
-      .style({
-        'line-color': '#f59e0b', // Dashed golden/amber color
-        'width': '3.5px',
-        'line-style': 'dashed',
-        'color': '#b45309', // Amber-700
-        'text-background-color': '#fef3c7', // Soft amber background
-        'text-background-opacity': 1,
-        'text-background-padding': '4px',
-      })
-      .selector('.edge-accepted')
-      .style({
-        'line-color': '#10b981', // Vibrant emerald green
-        'width': '5px', // Bold 5px and distinct
-        'line-style': 'solid',
-        'color': '#047857', // Deep green for high-contrast legible weight label
-        'text-background-color': '#ecfdf5', // Soft light green highlight badge to isolate weight label
-        'text-background-opacity': 1,
-        'text-background-padding': '4px',
-      })
-      .selector('.edge-rejected')
-      .style({
-        'line-color': '#ef4444', // Thin, dotted red lines
-        'width': '2px',
-        'line-style': 'dotted',
-        'color': '#b91c1c', // Red-700
-        'text-background-color': '#fee2e2', // Soft red background
-        'text-background-opacity': 1,
-        'text-background-padding': '4px',
-      })
-      .selector('.edge-neutral')
-      .style({
-        'line-color': '#cbd5e1', // Highly desaturated neutral slate (using a slightly darker gray than pure white-ish f1f5f9 for good text legibility)
-        'width': '1.5px', // thin
-        'opacity': 0.4, // partially translucent
-        'color': '#64748b',
-        'text-background-color': '#ffffff',
-        'text-background-opacity': 0.4,
-      })
-      // Custom edit state helpers
-      .selector('.source-highlight')
-      .style({
-        'border-color': '#4f46e5', // Deep Indigo source highlight
-        'border-width': '3.5px',
-        'background-color': '#e0e7ff',
-      })
-      .selector('.node-doubletapped')
-      .style({
-        'background-color': '#fef08a', // vibrant yellow background (yellow-200)
-        'border-color': '#eab308', // yellow-500 border
-        'border-width': '4px',
-        'color': '#854d0e', // yellow-800 text
-      })
-      .update();
-  }, [isAnimationActive, currentStep, isMobile, doubleTappedNodeId]);
+  }, [isAnimationActive, currentStep, isMobile, doubleTappedNodeId, graph]);
 
   // Automatically fit nodes to canvas viewport if size changes or standard elements reset
   const handleAutoLayout = () => {
@@ -789,6 +811,30 @@ export default function Canvas({
 
       {/* Toolbar Options on Bottom Right */}
       <div className="absolute bottom-4 right-4 z-15 flex gap-2">
+        {isAnimationActive && onReopenModal && (
+          <button
+            id="canvas-reopen-modal-btn"
+            onClick={onReopenModal}
+            className="h-12 px-5 sm:h-9 sm:px-3.5 bg-emerald-50 hover:bg-emerald-100/85 text-emerald-700 border border-emerald-250 sm:border-emerald-200 rounded-2xl sm:rounded-full flex items-center justify-center gap-1.5 text-xs font-bold sm:font-semibold shadow-md sm:shadow-sm transition-all cursor-pointer bg-white/95"
+            title="Reopen Completion Modal"
+          >
+            <Award className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+            <span className="hidden sm:inline animate-fade-in">Reopen Completion Modal</span>
+            <span className="sm:hidden">Summary</span>
+          </button>
+        )}
+        {isAnimationActive && onResetEnv && (
+          <button
+            id="canvas-reset-env-btn"
+            onClick={onResetEnv}
+            className="h-12 px-5 sm:h-9 sm:px-3.5 bg-rose-50 hover:bg-rose-105/90 text-rose-700 border border-rose-250 sm:border-rose-200 rounded-2xl sm:rounded-full flex items-center justify-center gap-1.5 text-xs font-bold sm:font-semibold shadow-md sm:shadow-sm transition-all cursor-pointer bg-white/95 animate-fade-in"
+            title="Reset Environment to Sandbox"
+          >
+            <span className="shrink-0">🔄</span>
+            <span className="hidden sm:inline">Reset Environment</span>
+            <span className="sm:hidden">Reset</span>
+          </button>
+        )}
         <button
           onClick={handleAutoLayout}
           className="h-12 px-5 sm:h-9 sm:px-3.5 bg-white border border-slate-250 sm:border-slate-200 rounded-2xl sm:rounded-full flex items-center justify-center gap-1.5 text-xs font-bold sm:font-semibold text-slate-700 sm:text-slate-600 shadow-md sm:shadow-sm hover:border-indigo-300 transition-all cursor-pointer bg-white/95"
