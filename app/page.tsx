@@ -549,23 +549,6 @@ export default function Home() {
               onResetEnv={reset}
             />
           </div>
-
-          {/* Right Hand Pseudocode Trace & Statistics Board */}
-          <div className="w-80 flex flex-col gap-6 shrink-0 h-full overflow-y-auto pr-1">
-            <Pseudocode
-              algorithm={algorithm}
-              currentStep={currentStep}
-              hasTimeline={hasTimeline}
-            />
-            
-            <ReusableStatsPanel
-              algorithm={algorithm}
-              graph={graph}
-              currentStep={currentStep}
-              hasTimeline={hasTimeline}
-              totalSteps={totalSteps}
-            />
-          </div>
         </main>
       </div>
 

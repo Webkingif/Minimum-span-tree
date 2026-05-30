@@ -58,13 +58,10 @@ export function useVisualizerTimeline(timeline: VisualizerStep[]) {
   const play = useCallback(() => {
     if (timeline.length === 0) return;
     
-    // If completed previously, wrap back to start
-    if (status === 'completed' || currentStepIndex >= timeline.length - 1) {
-      setCurrentStepIndex(0);
-    }
-    
-    setStatus('playing');
-  }, [timeline, status, currentStepIndex]);
+    // Instantly transition to the final step of the algorithm
+    setCurrentStepIndex(timeline.length - 1);
+    setStatus('completed');
+  }, [timeline]);
 
   const setStepIndex = useCallback((idx: number) => {
     if (timeline.length === 0) return;

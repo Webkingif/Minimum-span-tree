@@ -43,7 +43,7 @@ export default function Footer({
     : 0;
 
   return (
-    <footer className="h-68 bg-white border-t border-slate-200 flex flex-col shrink-0 select-none overflow-hidden pb-4">
+    <footer className="h-72 bg-white border-t border-slate-200 flex flex-col shrink-0 select-none overflow-hidden">
       {/* Tilted Timeline Scrubber Slider Header spanning the entire width */}
       <div id="interactive-timeline-scrubber" className="bg-slate-50 border-b border-slate-200/60 py-3.5 px-8 flex items-center justify-between gap-6 shrink-0">
         <div className="flex items-center gap-2 shrink-0">
@@ -206,6 +206,15 @@ export default function Footer({
               </span>
             </div>
           </div>
+        </div>
+      </div>
+
+      {/* Tiny clean copyright & credit bar */}
+      <div id="footer-credit-bar" className="px-8 text-[10px] text-slate-400 font-medium font-sans flex justify-between items-center bg-slate-50 border-t border-slate-200/50 py-2 shrink-0">
+        <div>© 2026 Minimum Spanning Tree Visualizer Lab.</div>
+        <div className="flex items-center gap-1">
+          <span>Created by</span>
+          <span className="text-indigo-600 font-extrabold hover:text-indigo-700 transition-colors">Idowu Oluwafemi (Webkingif)</span>
         </div>
       </div>
     </footer>

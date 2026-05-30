@@ -165,6 +165,88 @@ export default function HelpPage() {
       )
     },
     {
+      id: 'sandbox-double-tap-creation',
+      category: 'sandbox',
+      title: 'Double-Tap Shortcut: Create Nodes Instantly',
+      icon: <PlusCircle className="w-5 h-5 text-indigo-500" />,
+      summary: 'Draw node anchors instantly anywhere in the workspace without changing tools.',
+      content: (
+        <div className="space-y-4">
+          <p className="text-sm text-slate-600 leading-relaxed">
+            When constructing complex graphs, constantly toggling toolbar buttons can slow you down. The canvas includes high-fidelity <strong>double-tap or double-click shortcuts</strong>:
+          </p>
+          <div className="p-4 bg-indigo-50/50 border border-indigo-100 rounded-2xl flex gap-3.5 items-start">
+            <div className="w-8 h-8 rounded-lg bg-indigo-600 text-white flex items-center justify-center shrink-0 text-xs font-black">
+              2x
+            </div>
+            <div className="space-y-1">
+              <h5 className="font-bold text-xs text-indigo-950">Double-Tap and Spawn Node</h5>
+              <p className="text-xs text-indigo-900/85 leading-relaxed">
+                Simply <strong>double-tap or double-click</strong> on any empty space around the workspace background. A new node is instantly drawn at your cursor or tap coordinates, even if you are currently in another mode like Select/Move!
+              </p>
+            </div>
+          </div>
+        </div>
+      )
+    },
+    {
+      id: 'sandbox-double-tap-edge',
+      category: 'sandbox',
+      title: 'Double-Tap Shortcut: Connect Edges Quickly',
+      icon: <Network className="w-5 h-5 text-indigo-500" />,
+      summary: 'Start an edge connection immediately by double tapping any existing node.',
+      content: (
+        <div className="space-y-4">
+          <p className="text-sm text-slate-600 leading-relaxed">
+            Connecting isolated elements can be triggered directly using the double-tap shortcut:
+          </p>
+          <div className="space-y-3">
+            <div className="p-4 bg-white border border-slate-200/80 rounded-2xl space-y-2">
+              <h5 className="font-bold text-xs text-slate-900 flex items-center gap-1.5 uppercase tracking-wider text-indigo-700">
+                ⚡ Steps for Double-Tap Edge Creation
+              </h5>
+              <ol className="space-y-3 text-xs text-slate-600 list-decimal pl-5">
+                <li>
+                  <strong>Double-tap (or double-click)</strong> on any existing node on the canvas.
+                </li>
+                <li>
+                  An interactive <strong>Add Edge Dialog</strong> will slide open automatically.
+                </li>
+                <li>
+                  Select your target node from the searchable dropdown list, type in the desired weight cost, and click <strong>Create Edge</strong> to link the pair instantly.
+                </li>
+              </ol>
+            </div>
+          </div>
+        </div>
+      )
+    },
+    {
+      id: 'sandbox-edit-weight',
+      category: 'sandbox',
+      title: 'How to Edit Edge Weights',
+      icon: <Edit3 className="w-5 h-5 text-indigo-500" />,
+      summary: 'Modify edge weight costs at any time using inline interactive controls.',
+      content: (
+        <div className="space-y-4">
+          <p className="text-sm text-slate-600 leading-relaxed">
+            Changing weights allows you to experiment with how algorithms prioritize routes. To edit any edge weight:
+          </p>
+          <div className="p-4 bg-slate-50 border border-slate-200 rounded-2xl space-y-2.5">
+            <h5 className="font-bold text-xs text-slate-900 uppercase tracking-wider">Method: Double-Click the Weight Label</h5>
+            <p className="text-xs text-slate-600 leading-relaxed">
+              When in <strong>Select/Move</strong> or <strong>Add Edge</strong> mode, double-click or double-tap on the <strong>numeric weight label box</strong> floating along any edge segment. This focuses a responsive input fields container:
+            </p>
+            <ul className="space-y-1.5 text-xs text-slate-600 list-disc pl-5">
+              <li>Use the slider to scrub values smoothly from 1 to 99.</li>
+              <li>Or click the input field, type in your final cost value, and press Enter (or tap Save).</li>
+              <li>The new weight will be integrated immediately, refreshing any active algorithm visual paths!</li>
+            </ul>
+          </div>
+        </div>
+      )
+    },
+    {
       id: 'algorithm-kruskal',
       category: 'algorithms',
       title: "Kruskal's Algorithm Framework",
@@ -657,8 +739,9 @@ export default function HelpPage() {
       </main>
 
       {/* Simplified doc footer */}
-      <footer className="bg-white border-t border-slate-200 py-6 text-center text-[11px] text-slate-400 font-medium">
+      <footer className="bg-white border-t border-slate-200 py-6 text-center text-[11px] text-slate-400 font-medium space-y-1.5">
         <p>© 2026 Minimum Spanning Tree Visualizer Lab. Crafted for computer science educators and scholars.</p>
+        <p>Created by <span className="text-indigo-600 font-extrabold">Idowu Oluwafemi (Webkingif)</span></p>
       </footer>
     </div>
   );

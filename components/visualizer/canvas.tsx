@@ -120,7 +120,7 @@ export default function Canvas({
             'text-halign': 'center',
             'width': nodeWidth,
             'height': nodeHeight,
-            'transition-property': 'background-color, border-color, border-width, box-shadow',
+            'transition-property': 'background-color, border-color, border-width',
             'transition-duration': 150,
           },
         },
