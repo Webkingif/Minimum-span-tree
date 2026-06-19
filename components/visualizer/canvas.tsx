@@ -48,7 +48,7 @@ export default function Canvas({
   useEffect(() => {
     stateRef.current = { graph, isAnimationActive, mode, selectedSourceId };
   }, [graph, isAnimationActive, mode, selectedSourceId]);
-  
+
   // Weight editor state
   const [editingEdge, setEditingEdge] = useState<{ id: string; weight: number; x: number; y: number } | null>(null);
 
@@ -494,7 +494,7 @@ export default function Canvas({
     });
   };
 
-  const saveEdgeWeight = (e: React.FormEvent) => {
+  const saveEdgeWeight: (e: React.FormEvent) => void = (e: React.FormEvent) => {
     e.preventDefault();
     if (editingEdge) {
       onUpdateEdgeWeight(editingEdge.id, editingEdge.weight);
@@ -535,7 +535,7 @@ export default function Canvas({
           >
             <Move className="w-5 h-5 sm:w-4 sm:h-4" />
           </button>
-          
+
           <button
             id="mode-node-btn"
             title="Insert Node"
@@ -615,7 +615,7 @@ export default function Canvas({
       {editingEdge && (
         isMobile ? (
           // Swipe-friendly backdrop modal overlay for Mobile devices
-          <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-xs z-50 flex items-end sm:items-center justify-center p-4">
+          <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-xs z-50 flex items-center justify-center p-4">
             <div className="bg-white rounded-3xl shadow-2xl border border-slate-200 w-full max-w-sm p-6 animate-in slide-in-from-bottom duration-300 pb-8 text-left select-none">
               <form onSubmit={saveEdgeWeight} className="space-y-4">
                 <div className="flex justify-between items-center pb-2 border-b border-slate-100">
@@ -631,7 +631,7 @@ export default function Canvas({
                     Cancel
                   </button>
                 </div>
-                
+
                 <div className="space-y-3 pt-1">
                   <label className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Edge Weight (1 - 99)</label>
                   <div className="flex gap-3">

@@ -137,6 +137,6 @@ export default function CompletionModal({
           </div>
         </motion.div>
       </div>
-    </AnimatePresence>
+    </AnimatePresence >
   );
 }

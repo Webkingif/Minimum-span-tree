@@ -246,8 +246,8 @@ export default function Home() {
         {/* Swipeable Drawer Dashboard Panel (Thumb Sized) */}
         <div className="fixed bottom-0 left-0 right-0 z-30 bg-white border-t border-slate-200 shadow-[0_-10px_35px_rgba(0,0,0,0.06)] flex flex-col pointer-events-auto">
           {/* Vertical Pull Selector Anchor Grab Handle */}
-          <div 
-            onClick={() => setIsDrawerOpen(!isDrawerOpen)} 
+          <div
+            onClick={() => setIsDrawerOpen(!isDrawerOpen)}
             className="w-full py-2 flex items-center justify-center cursor-pointer hover:bg-slate-50"
           >
             <div className="w-12 h-1.5 bg-slate-300 rounded-full" />
@@ -296,15 +296,16 @@ export default function Home() {
             </div>
 
             {/* Info toggle expansion button */}
-            <button
-              onClick={() => setIsDrawerOpen(!isDrawerOpen)}
+            {/* <button
+              // onClick={() => setIsDrawerOpen(!isDrawerOpen)}
+              onClick={() => console.log("info btn clicked")}
               className={cn(
                 "px-3.5 py-2.5 bg-slate-100 hover:bg-slate-250 text-slate-700 border border-slate-200/60 rounded-xl text-[10px] font-extrabold uppercase tracking-wider cursor-pointer flex items-center gap-1.5 shrink-0 select-none transition-all",
                 isDrawerOpen && "bg-indigo-50 border-indigo-200 text-indigo-700 font-black shadow-xs shadow-indigo-50"
               )}
             >
               Info {isDrawerOpen ? '▼' : '▲'}
-            </button>
+            </button> */}
           </div>
 
           {/* Slide out expandable container */}
@@ -352,7 +353,7 @@ export default function Home() {
                           Marker {currentStepIndex}
                         </span>
                       </div>
-                      
+
                       <div className="bg-white border border-slate-150/50 p-4 rounded-2xl shadow-xs flex items-start gap-3">
                         <span className="w-7 h-7 bg-indigo-50 border border-indigo-100 rounded-lg flex items-center justify-center text-xs font-mono font-black text-indigo-600 shrink-0">
                           {currentStepIndex}
@@ -501,7 +502,7 @@ export default function Home() {
 
       {/* Main split work chamber */}
       <div className="flex flex-1 overflow-hidden min-h-0">
-         {/* Left Hand Execution Console */}
+        {/* Left Hand Execution Console */}
         <Sidebar
           status={status}
           speed={speed}
@@ -529,7 +530,7 @@ export default function Home() {
 
         {/* Center Sandbox Canvas */}
         <main className="flex-1 relative p-6 flex flex-row gap-6 bg-slate-50/50 min-w-0">
-          
+
           {/* Main Cytoscape Canvas view */}
           <div className="flex-1 flex flex-col min-w-0 h-full">
             <Canvas
